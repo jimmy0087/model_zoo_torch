@@ -17,13 +17,16 @@ ModelList  = {'AlexNet': AlexNet, 'alexnet':alexnet,
               'ResNet':ResNet, 'resnet18':resnet18, 'resnet34':resnet34, 'resnet50':resnet50, 'resnet101':resnet101,'resnet152':resnet152,
               'SqueezeNet':SqueezeNet, 'squeezenet1_0':squeezenet1_0, 'squeezenet1_1':squeezenet1_1,
               'VGG':VGG, 'vgg11':vgg11, 'vgg11_bn':vgg11_bn, 'vgg13':vgg13, 'vgg13_bn':vgg13_bn,
-              'vgg16':vgg16, 'vgg16_bn':vgg16_bn,'vgg19_bn':vgg19_bn, 'vgg19':vgg19}
+              'vgg16':vgg16, 'vgg16_bn':vgg16_bn,'vgg19_bn':vgg19_bn, 'vgg19':vgg19,
+              'se_resnet18': se_resnet18, 'se_resnet34': se_resnet34, 'se_resnet50': se_resnet50,'se_resnet101': se_resnet101, 'se_resnet152': se_resnet152}
 
 class TRAIN_TEST(object):
     def __init__(self,opt):
         self.root_path = opt.root_path
         self.result_path = os.path.join(self.root_path,opt.result_path)
 
+        self.n_classes = opt.n_classes
+        self.n_epochs = opt.n_epochs
         self.batch_size = opt.batch_size
         self.learning_rate = opt.learning_rate
         self.momentum = opt.momentum
@@ -32,8 +35,6 @@ class TRAIN_TEST(object):
 
         self.no_cuda = opt.no_cuda
         self.n_threads = opt.n_threads
-        self.n_epochs = opt.n_epochs
-
         self.checkpoint = opt.checkpoint
 
 
@@ -42,33 +43,49 @@ class TRAIN_TEST(object):
         assert data_name in DatasetsList
 
         if(data_name == 'CIFAR10'):
-            data = datasets.CIFAR10(root='.', train=True, download=True,
+            training_data = datasets.CIFAR10(root='.', train=True, download=True,
                                 transform=transforms.Compose([
                                 transforms.RandomResizedCrop(256),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,))]))
 
+            val_data = datasets.CIFAR10(root='.', train=False, download=True,
+                                                  transform=transforms.Compose([
+                                                      transforms.RandomResizedCrop(256),
+                                                      transforms.ToTensor(),
+                                                      transforms.Normalize((0.1307,), (0.3081,))]))
+
         elif(data_name == 'CIFAR100'):
-            data = datasets.CIFAR100(root='.', train=True, download=True,
+            training_data = datasets.CIFAR100(root='.', train=True, download=True,
                                     transform=transforms.Compose([
                                         transforms.RandomResizedCrop(256),
                                         transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,))]))
+
+            val_data = datasets.CIFAR100(root='.', train=False, download=True,
+                                                   transform=transforms.Compose([
+                                                       transforms.RandomResizedCrop(256),
+                                                       transforms.ToTensor(),
+                                                       transforms.Normalize((0.1307,), (0.3081,))]))
         else:
-            data = ''
+            training_data = ''
+            val_data = ''
 
-        return data
+        return training_data,val_data
 
-    def model(self,model_name='resnet18'):
+    def model(self,model_name='resnet18',model_path=None):
         assert model_name in ModelList
         self.model_name = model_name
         # model_ft = resnet18(pretrained=True)
         # num_ftrs = model_ft.fc.in_features
         # model_ft.fc = nn.Linear(num_ftrs, 10)
 
-        model_ft = ModelList[model_name]
-        model_ft.apply(self.weights_init)
-        return model_ft
+        self.model_ft = ModelList[self.model_name](num_classes = self.n_classes)
+        if (model_path != None):
+            self.model_ft.load_state_dict(model_path)
+        else:
+            self.model_ft.apply(self.weights_init)
+        return self.model_ft
 
     def weights_init(self,m):
         classname = m.__class__.__name__
@@ -78,10 +95,10 @@ class TRAIN_TEST(object):
             nn.init.constant_(m.bias.data, 0.0)
         elif classname.find('Linear') != -1:
             nn.init.xavier_normal_(m.weight.data)
-            nn.init.constant_(m.bias.data, 0.0)
+            #nn.init.constant_(m.bias.data, 0.0)
 
 
-    def train(self,training_data,model):
+    def train(self,training_data,val_data,model):
         #data init
         train_loader = torch.utils.data.DataLoader(
             training_data,
@@ -107,15 +124,16 @@ class TRAIN_TEST(object):
             nesterov=self.nesterov)
 
         #BP init
-        criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss()
 
         print(model)
         if not self.no_cuda:
-            model = nn.DataParallel(model,device_ids=[0,1])
+            model = nn.DataParallel(model,device_ids=[0,1,2,3])
         #start train
         for i in range(0, self.n_epochs + 1):
-            self.train_epoch(i, train_loader, model, criterion, optimizer,
+            self.train_epoch(i, train_loader, model, self.criterion, optimizer,
                         train_logger, train_batch_logger)
+            self.validation(val_data,model)
 
 
     def train_epoch(self,epoch, data_loader, model, criterion, optimizer,
@@ -186,11 +204,59 @@ class TRAIN_TEST(object):
         })
 
         if epoch % self.checkpoint == 0:
-            save_file_path = os.path.join(self.result_path,
-                                          'save_{}.pth'.format(epoch))
+            save_file_path = os.path.join(self.result_path,self.model_name+'save_{}.pth'.format(epoch))
             states = {
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }
             torch.save(states, save_file_path)
+
+    def validation(self,val_data,model):
+        val_loader = torch.utils.data.DataLoader(
+            val_data,
+            batch_size=self.batch_size,
+            shuffle=False,
+            # num_workers=self.n_threads,
+            pin_memory=True)
+
+        test_logger = Logger(os.path.join(self.result_path, self.model_name + '_test.log'),
+            ['time', 'loss', 'acc'])
+
+
+        model.eval()
+        losses = AverageMeter()
+        accuracies = AverageMeter()
+
+        end_time = time.time()
+        for i, (inputs, targets) in enumerate(val_loader):
+
+            if not self.no_cuda:
+                model = model.cuda()
+                inputs = inputs.cuda(async=True)
+                targets = targets.cuda(async=True)
+
+            outputs = model(inputs)
+
+            loss = self.criterion(outputs, targets)
+            acc = calculate_accuracy(outputs, targets)
+
+            losses.update(loss.data, inputs.size(0))
+            accuracies.update(acc, inputs.size(0))
+
+            end_time = time.time()
+
+        test_time= time.time() - end_time()
+
+        test_logger.log({
+            'time': test_time,
+            'loss': losses.avg,
+            'acc': accuracies.avg,
+        })
+
+        print('TestTime {test_time:.3f}\t'
+              'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+              'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
+            test_time=test_time,
+            loss=losses,
+            acc=accuracies))

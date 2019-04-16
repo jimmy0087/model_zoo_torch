@@ -5,7 +5,7 @@ def parse_opts():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--root_path',
-        default='/home/yangcheng/code/model_zoo_torch',
+        default='F:/postgraduate/program/model_zoo_torch/',
         type=str,
         help='Root directory path of data')
 
@@ -77,7 +77,7 @@ def parse_opts():
         '--dampening', default=0.9, type=float, help='dampening of SGD')
 
     parser.add_argument(
-        '--weight_decay', default=1e-3, type=float, help='Weight Decay')
+        '--weight_decay', default=5e-4, type=float, help='Weight Decay')
 
     parser.add_argument(
         '--no_mean_norm',
@@ -105,7 +105,7 @@ def parse_opts():
     )
 
     parser.add_argument(
-        '--batch_size', default=64, type=int, help='Batch Size')
+        '--batch_size', default=128, type=int, help='Batch Size')
 
     parser.add_argument(
         '--n_epochs',
