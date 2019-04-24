@@ -18,7 +18,8 @@ ModelList  = {'AlexNet': AlexNet, 'alexnet':alexnet,
               'SqueezeNet':SqueezeNet, 'squeezenet1_0':squeezenet1_0, 'squeezenet1_1':squeezenet1_1,
               'VGG':VGG, 'vgg11':vgg11, 'vgg11_bn':vgg11_bn, 'vgg13':vgg13, 'vgg13_bn':vgg13_bn,
               'vgg16':vgg16, 'vgg16_bn':vgg16_bn,'vgg19_bn':vgg19_bn, 'vgg19':vgg19,
-              'se_resnet18': se_resnet18, 'se_resnet34': se_resnet34, 'se_resnet50': se_resnet50,'se_resnet101': se_resnet101, 'se_resnet152': se_resnet152}
+              'se_resnet18': se_resnet18, 'se_resnet34': se_resnet34, 'se_resnet50': se_resnet50,'se_resnet101': se_resnet101, 'se_resnet152': se_resnet152,
+              'hr18_net': hr18_net}
 
 class TRAIN_TEST(object):
     def __init__(self,opt):
@@ -114,6 +115,8 @@ class TRAIN_TEST(object):
         train_batch_logger = Logger(
             os.path.join(self.result_path, self.model_name + '_train_batch.log'),
             ['epoch', 'batch', 'iter', 'loss', 'acc', 'lr'])
+        val_logger = Logger(os.path.join(self.result_path, self.model_name + '_test.log'),
+                            ['time', 'loss', 'acc'])
 
         #optimizer init
         optimizer = optim.SGD(
@@ -133,7 +136,7 @@ class TRAIN_TEST(object):
         for i in range(0, self.n_epochs + 1):
             self.train_epoch(i, train_loader, model, self.criterion, optimizer,
                         train_logger, train_batch_logger)
-            self.validation(val_data,model)
+            self.validation(val_data,model,val_logger)
 
 
     def train_epoch(self,epoch, data_loader, model, criterion, optimizer,
@@ -212,16 +215,13 @@ class TRAIN_TEST(object):
             }
             torch.save(states, save_file_path)
 
-    def validation(self,val_data,model):
+    def validation(self,val_data,model,val_logger):
         val_loader = torch.utils.data.DataLoader(
             val_data,
             batch_size=self.batch_size,
             shuffle=False,
             # num_workers=self.n_threads,
             pin_memory=True)
-
-        test_logger = Logger(os.path.join(self.result_path, self.model_name + '_test.log'),
-            ['time', 'loss', 'acc'])
 
 
         model.eval()
@@ -248,7 +248,7 @@ class TRAIN_TEST(object):
 
         test_time= time.time() - end_time()
 
-        test_logger.log({
+        val_logger.log({
             'time': test_time,
             'loss': losses.avg,
             'acc': accuracies.avg,
