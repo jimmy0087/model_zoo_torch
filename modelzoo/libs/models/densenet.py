@@ -2,7 +2,7 @@ import re
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
+import torch.utils.model_zoo as mz
 from collections import OrderedDict
 
 __all__ = ['DenseNet', 'densenet121', 'densenet169', 'densenet201', 'densenet161']
@@ -32,7 +32,7 @@ def densenet121(pretrained=False, **kwargs):
         # to find such keys.
         pattern = re.compile(
             r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
-        state_dict = model_zoo.load_url(model_urls['densenet121'])
+        state_dict = mz.load_url(model_urls['densenet121'])
         for key in list(state_dict.keys()):
             res = pattern.match(key)
             if res:
@@ -59,7 +59,7 @@ def densenet169(pretrained=False, **kwargs):
         # to find such keys.
         pattern = re.compile(
             r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
-        state_dict = model_zoo.load_url(model_urls['densenet169'])
+        state_dict = mz.load_url(model_urls['densenet169'])
         for key in list(state_dict.keys()):
             res = pattern.match(key)
             if res:
@@ -86,7 +86,7 @@ def densenet201(pretrained=False, **kwargs):
         # to find such keys.
         pattern = re.compile(
             r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
-        state_dict = model_zoo.load_url(model_urls['densenet201'])
+        state_dict = mz.load_url(model_urls['densenet201'])
         for key in list(state_dict.keys()):
             res = pattern.match(key)
             if res:
@@ -113,7 +113,7 @@ def densenet161(pretrained=False, **kwargs):
         # to find such keys.
         pattern = re.compile(
             r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
-        state_dict = model_zoo.load_url(model_urls['densenet161'])
+        state_dict = mz.load_url(model_urls['densenet161'])
         for key in list(state_dict.keys()):
             res = pattern.match(key)
             if res:

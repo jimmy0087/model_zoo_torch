@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.utils.model_zoo as model_zoo
+import torch.utils.model_zoo as mz
 
 
 __all__ = ['AlexNet', 'alexnet']
@@ -55,5 +55,5 @@ def alexnet(pretrained=False, **kwargs):
     """
     model = AlexNet(**kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['alexnet']))
+        model.load_state_dict(mz.load_url(model_urls['alexnet']))
     return model

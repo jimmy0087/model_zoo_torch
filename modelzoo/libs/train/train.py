@@ -1,17 +1,15 @@
 import torch
 import torchvision
-import torchvision.transforms as transforms
 import time
-import os
 from torch import nn,optim
 from torchvision import datasets, transforms
 from ..models import *
-from ..utils import AverageMeter, calculate_accuracy , Logger
+from ..utils import AverageMeter, calculate_accuracy, Logger, MyDataset
 
 
 DatasetsList = ['CIFAR10','CIFAR100']
 
-ModelList  = {'AlexNet': AlexNet, 'alexnet':alexnet,
+ModelList = {'AlexNet': AlexNet, 'alexnet':alexnet,
               'DenseNet':DenseNet, 'densenet121':densenet121, 'densenet169':densenet169,
               'densenet201':densenet201, 'densenet161':densenet161,'Inception3':Inception3, 'inception_v3':inception_v3,
               'ResNet':ResNet, 'resnet18':resnet18, 'resnet34':resnet34, 'resnet50':resnet50, 'resnet101':resnet101,'resnet152':resnet152,
@@ -22,59 +20,66 @@ ModelList  = {'AlexNet': AlexNet, 'alexnet':alexnet,
               'hr18_net': hr18_net}
 
 class TRAIN_TEST(object):
-    def __init__(self,opt):
-        self.root_path = opt.root_path
-        self.result_path = os.path.join(self.root_path,opt.result_path)
+    def __init__(self, opt):
+        self.root_path = opt['path']['root_path']
+        self.result_path = os.path.join(self.root_path, opt['path']['result_path'])
+        self.datasets_path = os.path.join(self.root_path, opt['path']['datasest_path'])
 
-        self.n_classes = opt.n_classes
-        self.n_epochs = opt.n_epochs
-        self.batch_size = opt.batch_size
-        self.learning_rate = opt.learning_rate
-        self.momentum = opt.momentum
-        self.weight_decay = opt.weight_decay
-        self.nesterov = opt.nesterov
+        self.n_classes = opt['model']['n_classes']
+        self.momentum = opt['model']['momentum']
+        self.weight_decay = opt['model']['weight_decay']
+        self.nesterov = opt['model']['nesterov']
 
-        self.no_cuda = opt.no_cuda
-        self.n_threads = opt.n_threads
-        self.checkpoint = opt.checkpoint
+        self.n_epochs = opt['train']['n_epochs']
+        self.batch_size = opt['train']['batch_size']
+        self.learning_rate = opt['train']['learning_rate']
+        self.n_threads = opt['train']['n_threads']
+        self.checkpoint = opt['train']['checkpoint']
 
+        self.no_cuda = opt['cuda']['no_cuda']
 
-
-    def datasets(self,data_name='CIFAR10'):
+    def datasets(self, data_name=None):
         assert data_name in DatasetsList
 
         if(data_name == 'CIFAR10'):
-            training_data = datasets.CIFAR10(root='.', train=True, download=True,
+            training_data = datasets.CIFAR10(root='./modelzoo/datasets/', train=True, download=False,
                                 transform=transforms.Compose([
-                                transforms.RandomResizedCrop(256),
+                                transforms.RandomResizedCrop(224),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,))]))
 
-            val_data = datasets.CIFAR10(root='.', train=False, download=True,
+            val_data = datasets.CIFAR10(root='./modelzoo/datasets/', train=False, download=False,
                                                   transform=transforms.Compose([
-                                                      transforms.RandomResizedCrop(256),
+                                                      transforms.RandomResizedCrop(224),
                                                       transforms.ToTensor(),
                                                       transforms.Normalize((0.1307,), (0.3081,))]))
 
         elif(data_name == 'CIFAR100'):
-            training_data = datasets.CIFAR100(root='.', train=True, download=True,
+            training_data = datasets.CIFAR100(root='./modelzoo/datasets/', train=True, download=True,
                                     transform=transforms.Compose([
-                                        transforms.RandomResizedCrop(256),
+                                        transforms.RandomResizedCrop(224),
                                         transforms.ToTensor(),
                                         transforms.Normalize((0.1307,), (0.3081,))]))
 
-            val_data = datasets.CIFAR100(root='.', train=False, download=True,
+            val_data = datasets.CIFAR100(root='./modelzoo/datasets/', train=False, download=True,
                                                    transform=transforms.Compose([
-                                                       transforms.RandomResizedCrop(256),
+                                                       transforms.RandomResizedCrop(224),
                                                        transforms.ToTensor(),
                                                        transforms.Normalize((0.1307,), (0.3081,))]))
         else:
-            training_data = ''
-            val_data = ''
+            train_txt_path = os.path.join(self.datasets_path, 'train.txt')
+            val_txt_path = os.path.join(self.datasets_path, 'val.txt')
 
-        return training_data,val_data
+            my_transform = transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.ToTensor()])
 
-    def model(self,model_name='resnet18',model_path=None):
+            training_data = MyDataset(train_txt_path, transform=my_transform)
+            val_data = MyDataset(val_txt_path, transform=my_transform)
+
+        return training_data, val_data
+
+    def model(self, model_name='resnet18', model_path=None):
         assert model_name in ModelList
         self.model_name = model_name
         # model_ft = resnet18(pretrained=True)
@@ -97,7 +102,6 @@ class TRAIN_TEST(object):
         elif classname.find('Linear') != -1:
             nn.init.xavier_normal_(m.weight.data)
             #nn.init.constant_(m.bias.data, 0.0)
-
 
     def train(self,training_data,val_data,model):
         #data init
@@ -131,18 +135,16 @@ class TRAIN_TEST(object):
 
         print(model)
         if not self.no_cuda:
-            model = nn.DataParallel(model,device_ids=[0,1,2,3])
+            model = nn.DataParallel(model,device_ids=[0, 1, 2, 3])
         #start train
         for i in range(0, self.n_epochs + 1):
             self.train_epoch(i, train_loader, model, self.criterion, optimizer,
                         train_logger, train_batch_logger)
-            self.validation(val_data,model,val_logger)
+            self.validation(val_data, model, val_logger)
 
-
-    def train_epoch(self,epoch, data_loader, model, criterion, optimizer,
+    def train_epoch(self, epoch, data_loader, model, criterion, optimizer,
                     epoch_logger, batch_logger):
         print('train at epoch {}'.format(epoch))
-
         #set model to train mode
         model.train()
 
@@ -194,10 +196,10 @@ class TRAIN_TEST(object):
                 epoch,
                 i + 1,
                 len(data_loader),
-                batch_time=batch_time,
-                data_time=data_time,
-                loss=losses,
-                acc=accuracies))
+                batch_time = batch_time,
+                data_time = data_time,
+                loss = losses,
+                acc = accuracies))
 
         epoch_logger.log({
             'epoch': epoch,
@@ -222,7 +224,6 @@ class TRAIN_TEST(object):
             shuffle=False,
             # num_workers=self.n_threads,
             pin_memory=True)
-
 
         model.eval()
         losses = AverageMeter()

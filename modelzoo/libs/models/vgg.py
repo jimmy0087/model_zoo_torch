@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.utils.model_zoo as model_zoo
+import torch.utils.model_zoo as mz
 import math
 
 
@@ -93,7 +93,7 @@ def vgg11(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['A']), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg11']))
+        model.load_state_dict(mz.load_url(model_urls['vgg11']))
     return model
 
 
@@ -107,7 +107,7 @@ def vgg11_bn(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['A'], batch_norm=True), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg11_bn']))
+        model.load_state_dict(mz.load_url(model_urls['vgg11_bn']))
     return model
 
 
@@ -121,7 +121,7 @@ def vgg13(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['B']), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg13']))
+        model.load_state_dict(mz.load_url(model_urls['vgg13']))
     return model
 
 
@@ -135,7 +135,7 @@ def vgg13_bn(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['B'], batch_norm=True), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg13_bn']))
+        model.load_state_dict(mz.load_url(model_urls['vgg13_bn']))
     return model
 
 
@@ -149,7 +149,7 @@ def vgg16(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['D']), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg16']))
+        model.load_state_dict(mz.load_url(model_urls['vgg16']))
     return model
 
 
@@ -163,7 +163,7 @@ def vgg16_bn(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['D'], batch_norm=True), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg16_bn']))
+        model.load_state_dict(mz.load_url(model_urls['vgg16_bn']))
     return model
 
 
@@ -177,7 +177,7 @@ def vgg19(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['E']), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg19']))
+        model.load_state_dict(mz.load_url(model_urls['vgg19']))
     return model
 
 
@@ -191,5 +191,5 @@ def vgg19_bn(pretrained=False, **kwargs):
         kwargs['init_weights'] = False
     model = VGG(make_layers(cfg['E'], batch_norm=True), **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['vgg19_bn']))
+        model.load_state_dict(mz.load_url(model_urls['vgg19_bn']))
     return model

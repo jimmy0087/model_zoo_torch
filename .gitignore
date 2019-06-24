@@ -108,3 +108,5 @@ venv.bak/
 /demo/
 /cifar-10-batches-py/
 *.gz
+/modelzoo/datasets/
+/modelzoo/config/

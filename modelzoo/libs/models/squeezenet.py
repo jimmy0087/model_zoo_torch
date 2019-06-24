@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-import torch.utils.model_zoo as model_zoo
+import torch.utils.model_zoo as mz
 
 
 __all__ = ['SqueezeNet', 'squeezenet1_0', 'squeezenet1_1']
@@ -111,7 +111,7 @@ def squeezenet1_0(pretrained=False, **kwargs):
     """
     model = SqueezeNet(version=1.0, **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['squeezenet1_0']))
+        model.load_state_dict(mz.load_url(model_urls['squeezenet1_0']))
     return model
 
 
@@ -126,5 +126,5 @@ def squeezenet1_1(pretrained=False, **kwargs):
     """
     model = SqueezeNet(version=1.1, **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['squeezenet1_1']))
+        model.load_state_dict(mz.load_url(model_urls['squeezenet1_1']))
     return model

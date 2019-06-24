@@ -1,10 +1,9 @@
-from modelzoo.train import TRAIN_TEST,parse_opts
+from modelzoo.libs.train import TRAIN_TEST,parse_opts
 
-
-opt = parse_opts()
-myTest= TRAIN_TEST(opt)
-traData,valData = myTest.datasets()
-myModel = myTest.model(model_name = 'se_resnet18')
-myTest.train(traData,valData,myModel)
+opt = parse_opts('./modelzoo/config/opts.json')
+myTest = TRAIN_TEST(opt)
+traData, valData = myTest.datasets('CIFAR10')
+myModel = myTest.model(model_name = 'AlexNet')
+myTest.train(traData, valData, myModel)
 
 
