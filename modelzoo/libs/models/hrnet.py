@@ -1,20 +1,9 @@
-# ------------------------------------------------------------------------------
-# Copyright (c) Microsoft
-# Licensed under the MIT License.
-# Written by Bin Xiao (Bin.Xiao@microsoft.com)
-# Modified by Ke Sun (sunk@mail.ustc.edu.cn)
-# ------------------------------------------------------------------------------
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import os
 import logging
-import functools
-
-import numpy as np
-
 import torch
 import torch.nn as nn
 import torch._utils
@@ -23,27 +12,26 @@ import torch.nn.functional as F
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
 
-HR18_CONFIG = {'STAGE2':{'NUM_MODULES':1,
-                       'NUM_BRANCHES':2,
-                       'NUM_BLOCKS':[4,4],
-                       'NUM_CHANNELS':[18,36],
-                       'BLOCK':'BASIC',
-                       'FUSE_METHOD':'SUM'},
+HR18_CONFIG = {'STAGE2': {'NUM_MODULES': 1,
+                          'NUM_BRANCHES': 2,
+                          'NUM_BLOCKS': [4, 4],
+                          'NUM_CHANNELS': [18, 36],
+                          'BLOCK': 'BASIC',
+                          'FUSE_METHOD': 'SUM'},
 
-             'STAGE3': {'NUM_MODULES': 4,
-                        'NUM_BRANCHES': 3,
-                        'NUM_BLOCKS': [4, 4,4],
-                        'NUM_CHANNELS': [18, 36,72],
-                        'BLOCK': 'BASIC',
-                        'FUSE_METHOD': 'SUM'},
+               'STAGE3': {'NUM_MODULES': 4,
+                          'NUM_BRANCHES': 3,
+                          'NUM_BLOCKS': [4, 4, 4],
+                          'NUM_CHANNELS': [18, 36, 72],
+                          'BLOCK': 'BASIC',
+                          'FUSE_METHOD': 'SUM'},
 
-             'STAGE4': {'NUM_MODULES': 3,
-                        'NUM_BRANCHES': 4,
-                        'NUM_BLOCKS': [4, 4,4,4],
-                        'NUM_CHANNELS': [18, 36,72,144],
-                        'BLOCK': 'BASIC',
-                        'FUSE_METHOD': 'SUM'}
-             }
+               'STAGE4': {'NUM_MODULES': 3,
+                          'NUM_BRANCHES': 4,
+                          'NUM_BLOCKS': [4, 4, 4, 4],
+                          'NUM_CHANNELS': [18, 36, 72, 144],
+                          'BLOCK': 'BASIC',
+                          'FUSE_METHOD': 'SUM'}}
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -166,8 +154,7 @@ class HighResolutionModule(nn.Module):
     def _make_one_branch(self, branch_index, block, num_blocks, num_channels,
                          stride=1):
         downsample = None
-        if stride != 1 or \
-                        self.num_inchannels[branch_index] != num_channels[branch_index] * block.expansion:
+        if stride != 1 or self.num_inchannels[branch_index] != num_channels[branch_index] * block.expansion:
             downsample = nn.Sequential(
                 nn.Conv2d(self.num_inchannels[branch_index],
                           num_channels[branch_index] * block.expansion,
@@ -268,7 +255,7 @@ blocks_dict = {
 
 
 class HighResolutionNet(nn.Module):
-    def __init__(self, num_classes,cfg, **kwargs):
+    def __init__(self, num_classes, cfg, **kwargs):
         super(HighResolutionNet, self).__init__()
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
@@ -475,7 +462,7 @@ class HighResolutionNet(nn.Module):
 
         return y
 
-    def init_weights(self, pretrained='', ):
+    def init_weights(self, pretrained=''):
         logger.info('=> init weights from normal distribution')
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
