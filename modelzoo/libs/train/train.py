@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from ..models import *
 from ..utils import AverageMeter, calculate_accuracy, Logger, MyDataset
+from visdom import Visdom
 
 DatasetsList = ['CIFAR10', 'CIFAR100']
 
@@ -43,6 +44,26 @@ class TrainPipline(object):
         self.no_cuda = opt['cuda']['no_cuda']
         self.model_name = ''
         self.model_ft = ''
+
+        self.visdom_log_file = os.path.join(self.result_path, 'log_files', 'visdom.log')
+        self.vis = Visdom(port=8097,
+                          log_to_filename=self.visdom_log_file,
+                          env='myTest_1')
+
+        self.vis_loss_opts = {'xlabel': 'epoch',
+                              'ylabel': 'loss',
+                              'title': 'losses',
+                              'legend': ['train_loss', 'val_loss']}
+
+        self.vis_tpr_opts = {'xlabel': 'epoch',
+                             'ylabel': 'tpr',
+                             'title': 'val_tpr',
+                             'legend': ['tpr@fpr10-2', 'tpr@fpr10-3', 'tpr@fpr10-4']}
+
+        self.vis_epochloss_opts = {'xlabel': 'epoch',
+                                   'ylabel': 'loss',
+                                   'title': 'epoch_losses',
+                                   'legend': ['train_loss', 'val_loss']}
 
     def datasets(self, data_name=None):
         assert data_name in DatasetsList
@@ -183,6 +204,8 @@ class TrainPipline(object):
                 'lr': optimizer.param_groups[0]['lr']
             })
 
+            self.vislog_batch(i, losses.val)
+
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
@@ -251,6 +274,19 @@ class TrainPipline(object):
                test_time=test_time,
                loss=losses,
                acc=accuracies))
+
+    def vislog_batch(self, batch_idx,loss):
+        x_value = batch_idx
+        y_value = loss
+        self.vis.line([y_value], [x_value],
+                      name='train_loss',
+                      win='losses',
+                      update='append')
+        self.vis.line([2], [x_value],
+                      name='test_loss',
+                      win='losses',
+                      update='append')
+        self.vis.update_window_opts(win='losses', opts=self.vis_loss_opts)
 
 
 def weights_init(m):
